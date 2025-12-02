@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVG - Convive Granada | Tasas Turísticas Transparentes</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        /* Variables CSS */
+        :root {
+            --primary-color: #2c5530;
+            --secondary-color: #4a7c59;
+            --accent-color: #8fb996;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+            --danger-color: #dc3545;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Reset y estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem 0;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--box-shadow);
+        }
+
+        .header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .logo span {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .nav ul {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            transition: background-color 0.3s;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Secciones */
+        .section {
+            display: none;
+            padding: 100px 0 50px;
+            min-height: 100vh;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+            font-size: 2.2rem;
+            text-align: center;
+        }
+
+        /* Tarjetas del Dashboard */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--box-shadow);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-header i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .card-header h3 {
+            font-size: 1.1rem;
+            color: var(--dark-color);
+        }
+
+        .card-body .monto {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .variacion {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .variacion.positivo {
+            color: var(--success-color);
+        }
+
+        .variacion.negativo {
+            color: var(--danger-color);
+        }
+
+        .detalle {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Gráficos */
+        .dashboard-graficos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+
+        .grafico-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .grafico-card h4 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        /* Mapa */
+        .mapa-leyenda {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .leyenda-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .color-completado {
+            width: 20px;
+            height: 20px;
+            background-color: var(--success-color);
+            border-radius: 50%;
+        }
+
+        .color-ejecucion {
+            width: 20px;
+            height: 20px;
+            background-color: var(--warning-color);
+            border-radius: 50%;
+        }
+
+        .color-aprobado {
+            width: 20px;
+            height: 20px;
+            background-color: var(--info-color);
+            border-radius: 50%;
+        }
+
+        .color-propuesta {
+            width: 20px;
+            height: 20px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+        }
+
+        #mapa-interactivo {
+            height: 600px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            background: white;
+        }
+
+        /* Estilos para los marcadores del mapa */
+        .map-marker {
+            font-size: 20px;
+            text-align: center;
+            line-height: 1;
+        }
+
+        /* Proyectos */
+        .filtros-proyectos {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .filtro-btn {
+            padding: 0.7rem 1.5rem;
+            border: 2px solid var(--primary-color);
+            background: white;
+            color: var(--primary-color);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .filtro-btn.active,
+        .filtro-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .grid-proyectos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .proyecto-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--box-shadow);
+            border-top: 4px solid var(--primary-color);
+            transition: all 0.3s;
+        }
+
+        .proyecto-card:hover {
+            transform: translateX(5px);
+        }
+
+        .proyecto-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .proyecto-header h3 {
+            color: var(--primary-color);
+            flex: 1;
+            margin-right: 1rem;
+        }
+
+        .estado-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .estado-badge.completado {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .estado-badge.ejecucion {
+            background-color: var(--warning-color);
+            color: var(--dark-color);
+        }
+
+        .estado-badge.aprobado {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .proyecto-info {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Finanzas */
+        .finanzas-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        .finanza-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .finanza-card h4 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .tabla-container {
+            overflow-x: auto;
+        }
+
+        .tabla-finanzas {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .tabla-finanzas th,
+        .tabla-finanzas td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tabla-finanzas th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 500;
+        }
+
+        .tabla-finanzas tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .documentos-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .documento-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: var(--border-radius);
+            transition: background-color 0.3s;
+        }
+
+        .documento-item:hover {
+            background: #e9ecef;
+        }
+
+        .documento-item i {
+            font-size: 1.5rem;
+            color: var(--danger-color);
+        }
+
+        .documento-info {
+            flex: 1;
+        }
+
+        .documento-info h5 {
+            margin-bottom: 0.2rem;
+            color: var(--primary-color);
+        }
+
+        .documento-info span {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .btn-descargar {
+            padding: 0.5rem 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn-descargar:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Participación */
+        .participacion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+
+        .propuesta-form {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .propuesta-form h4 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .btn-enviar {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-enviar:hover {
+            background: var(--secondary-color);
+        }
+
+        .propuestas-lista {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .propuestas-lista h4 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .lista-propuestas {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .propuesta-item {
+            padding: 1.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: var(--border-radius);
+            transition: border-color 0.3s;
+            background: #f8f9fa;
+        }
+
+        .propuesta-item:hover {
+            border-color: var(--primary-color);
+            background: white;
+        }
+
+        .propuesta-item h5 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .propuesta-item p {
+            color: #666;
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .propuesta-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .propuesta-votos {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-votar {
+            padding: 0.5rem 1rem;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-votar:hover {
+            background: var(--secondary-color);
+        }
+
+        /* Pie de página */
+        footer {
+            background: #2c5530;
+            color: white;
+            padding: 2rem 0;
+            margin-top: 2rem;
+        }
+
+        footer .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        footer h3, footer h4 {
+            color: #8fb996;
+            margin-bottom: 1rem;
+        }
+
+        footer a {
+            color: white;
+            text-decoration: none;
+        }
+
+        footer .copyright {
+            border-top: 1px solid #4a7c59;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            text-align: center;
+            grid-column: 1 / -1;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header .container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav ul {
+                gap: 0.5rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .dashboard-graficos {
+                grid-template-columns: 1fr;
+            }
+
+            .finanzas-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .participacion-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-proyectos {
+                grid-template-columns: 1fr;
+            }
+
+            .proyecto-header {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .proyecto-info {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .mapa-leyenda {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .filtros-proyectos {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .filtro-btn {
+                width: 200px;
+                text-align: center;
+            }
+
+            #mapa-interactivo {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .grafico-card {
+                padding: 1rem;
+            }
+            
+            .section {
+                padding: 80px 0 30px;
+            }
+            
+            h2 {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Estados de propuestas */
+        .estado-pendiente {
+            color: var(--warning-color);
+            font-weight: bold;
+        }
+
+        .estado-evaluacion {
+            color: var(--info-color);
+            font-weight: bold;
+        }
+
+        .estado-aprobado {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .estado-rechazado {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section.active {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .card {
+            animation: fadeIn 0.6s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>🏛️ CVG - Convive Granada</h1>
+                <span>Sistema de Tasas Turísticas Transparentes</span>
+            </div>
+            <nav class="nav">
+                <ul>
+                    <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
+                    <li><a href="#mapa" class="nav-link">Mapa Interactivo</a></li>
+                    <li><a href="#proyectos" class="nav-link">Proyectos</a></li>
+                    <li><a href="#finanzas" class="nav-link">Transparencia</a></li>
+                    <li><a href="#participa" class="nav-link">Participa</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Sección Dashboard -->
+    <section id="dashboard" class="section active">
+        <div class="container">
+            <h2>Dashboard Principal CVG</h2>
+            
+            <!-- Tarjetas de Resumen -->
+            <div class="dashboard-cards">
+                <div class="card saldo-actual">
+                    <div class="card-header">
+                        <i class="fas fa-euro-sign"></i>
+                        <h3>Saldo Actual</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="monto">€2,847,320</div>
+                        <div class="variacion positivo">+12.5% vs mes anterior</div>
+                    </div>
+                </div>
+
+                <div class="card proyectos-activos">
+                    <div class="card-header">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Proyectos Activos</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="monto">18</div>
+                        <div class="detalle">€1.2M en ejecución</div>
+                    </div>
+                </div>
+
+                <div class="card establecimientos">
+                    <div class="card-header">
+                        <i class="fas fa-hotel"></i>
+                        <h3>Establecimientos</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="monto">324</div>
+                        <div class="detalle">Activos este mes</div>
+                    </div>
+                </div>
+
+                <div class="card recaudacion-mes">
+                    <div class="card-header">
+                        <i class="fas fa-chart-line"></i>
+                        <h3>Recaudación Mes</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="monto">€284,500</div>
+                        <div class="detalle">+8.3% vs 2023</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="dashboard-graficos">
+                <div class="grafico-card">
+                    <h4>Evolución Recaudación 2024</h4>
+                    <div style="height: 300px; display: flex; align-items: center; justify-content: center; background: linear-gradient(45deg, #2c5530, #4a7c59); color: white; border-radius: 8px;">
+                        <div style="text-align: center;">
+                            <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <h3>€2,847,320</h3>
+                            <p>Total Recaudado 2024</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="grafico-card">
+                    <h4>Distribución de Proyectos</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; height: 300px;">
+                        <div style="background: #28a745; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+                            <div style="font-size: 2rem;">8</div>
+                            <div>Completados</div>
+                        </div>
+                        <div style="background: #ffc107; color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+                            <div style="font-size: 2rem;">6</div>
+                            <div>En Ejecución</div>
+                        </div>
+                        <div style="background: #17a2b8; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+                            <div style="font-size: 2rem;">4</div>
+                            <div>Aprobados</div>
+                        </div>
+                        <div style="background: #8fb996; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+                            <div style="font-size: 2rem;">12</div>
+                            <div>Propuestas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Mapa Interactivo -->
+    <section id="mapa" class="section">
+        <div class="container">
+            <h2>Mapa Interactivo - Proyectos CVG</h2>
+            <div class="mapa-leyenda">
+                <div class="leyenda-item">
+                    <span class="color-completado"></span>
+                    <span>Proyectos Completados</span>
+                </div>
+                <div class="leyenda-item">
+                    <span class="color-ejecucion"></span>
+                    <span>En Ejecución</span>
+                </div>
+                <div class="leyenda-item">
+                    <span class="color-aprobado"></span>
+                    <span>Aprobados</span>
+                </div>
+                <div class="leyenda-item">
+                    <span class="color-propuesta"></span>
+                    <span>Propuestas Ciudadanas</span>
+                </div>
+            </div>
+            <div id="mapa-interactivo"></div>
+        </div>
+    </section>
+
+    <!-- Resto de las secciones (Proyectos, Finanzas, Participación) se mantienen igual -->
+    <!-- Sección Proyectos -->
+    <section id="proyectos" class="section">
+        <div class="container">
+            <h2>Proyectos CVG</h2>
+            <div class="filtros-proyectos">
+                <button class="filtro-btn active" data-filtro="todos">Todos los Proyectos</button>
+                <button class="filtro-btn" data-filtro="completado">Completados</button>
+                <button class="filtro-btn" data-filtro="ejecucion">En Ejecución</button>
+                <button class="filtro-btn" data-filtro="aprobado">Aprobados</button>
+            </div>
+
+            <div class="grid-proyectos">
+                <!-- Proyecto 1 -->
+                <div class="proyecto-card completado">
+                    <div class="proyecto-header">
+                        <h3>Rehabilitación Albaicín</h3>
+                        <span class="estado-badge completado">Completado</span>
+                    </div>
+                    <div class="proyecto-body">
+                        <p>Rehabilitación integral de fachadas y espacios públicos en el barrio del Albaicín, mejorando la experiencia turística y calidad de vida de residentes.</p>
+                        <div class="proyecto-info">
+                            <div class="info-item">
+                                <i class="fas fa-euro-sign"></i>
+                                <span>€450,000</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>Ene 2024 - Jun 2024</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-users"></i>
+                                <span>12,500 beneficiarios</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proyecto 2 -->
+                <div class="proyecto-card ejecucion">
+                    <div class="proyecto-header">
+                        <h3>Mejora Iluminación Alhambra</h3>
+                        <span class="estado-badge ejecucion">En Ejecución</span>
+                    </div>
+                    <div class="proyecto-body">
+                        <p>Instalación de sistema de iluminación LED eficiente en accesos a la Alhambra, reduciendo consumo energético y mejorando la seguridad.</p>
+                        <div class="proyecto-info">
+                            <div class="info-item">
+                                <i class="fas fa-euro-sign"></i>
+                                <span>€320,000</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-tasks"></i>
+                                <span>65% completado</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-users"></i>
+                                <span>8,500 beneficiarios</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proyecto 3 -->
+                <div class="proyecto-card aprobado">
+                    <div class="proyecto-header">
+                        <h3>Nuevo Mirador San Nicolás</h3>
+                        <span class="estado-badge aprobado">Aprobado</span>
+                    </div>
+                    <div class="proyecto-body">
+                        <p>Ampliación y mejora del mirador con mejor accesibilidad, áreas de descanso y servicios para visitantes.</p>
+                        <div class="proyecto-info">
+                            <div class="info-item">
+                                <i class="fas fa-euro-sign"></i>
+                                <span>€150,000</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>Nov 2024 - Feb 2025</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-users"></i>
+                                <span>20,000 beneficiarios</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proyecto 4 -->
+                <div class="proyecto-card ejecucion">
+                    <div class="proyecto-header">
+                        <h3>Modernización Mercado San Agustín</h3>
+                        <span class="estado-badge ejecucion">En Ejecución</span>
+                    </div>
+                    <div class="proyecto-body">
+                        <p>Renovación completa de las instalaciones del mercado, mejorando condiciones para comerciantes y clientes.</p>
+                        <div class="proyecto-info">
+                            <div class="info-item">
+                                <i class="fas fa-euro-sign"></i>
+                                <span>€280,000</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-tasks"></i>
+                                <span>40% completado</span>
+                            </div>
+                            <div class="info-item">
+                                <i class="fas fa-users"></i>
+                                <span>15,000 beneficiarios</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Transparencia Financiera -->
+    <section id="finanzas" class="section">
+        <div class="container">
+            <h2>Transparencia Financiera</h2>
+            
+            <div class="finanzas-grid">
+                <div class="finanza-card">
+                    <h4>Ingresos Detallados 2024</h4>
+                    <div class="tabla-container">
+                        <table class="tabla-finanzas">
+                            <thead>
+                                <tr>
+                                    <th>Mes</th>
+                                    <th>Hoteles 5*</th>
+                                    <th>Hoteles 4*</th>
+                                    <th>Hoteles 3*</th>
+                                    <th>Apartamentos</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Enero</td>
+                                    <td>€45,000</td>
+                                    <td>€78,000</td>
+                                    <td>€97,000</td>
+                                    <td>€45,000</td>
+                                    <td><strong>€265,000</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Febrero</td>
+                                    <td>€48,000</td>
+                                    <td>€82,000</td>
+                                    <td>€105,000</td>
+                                    <td>€48,000</td>
+                                    <td><strong>€283,000</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Marzo</td>
+                                    <td>€51,000</td>
+                                    <td>€86,000</td>
+                                    <td>€108,000</td>
+                                    <td>€51,000</td>
+                                    <td><strong>€296,000</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Abril</td>
+                                    <td>€54,000</td>
+                                    <td>€90,000</td>
+                                    <td>€114,000</td>
+                                    <td>€54,000</td>
+                                    <td><strong>€312,000</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Mayo</td>
+                                    <td>€57,000</td>
+                                    <td>€95,000</td>
+                                    <td>€120,000</td>
+                                    <td>€57,000</td>
+                                    <td><strong>€329,000</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Junio</td>
+                                    <td>€60,000</td>
+                                    <td>€99,000</td>
+                                    <td>€125,500</td>
+                                    <td>€60,000</td>
+                                    <td><strong>€344,500</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="finanza-card">
+                    <h4>Documentos Oficiales</h4>
+                    <div class="documentos-lista">
+                        <div class="documento-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <div class="documento-info">
+                                <h5>Informe Auditoría Q3 2024</h5>
+                                <span>15 Oct 2024 · PDF 2.4MB</span>
+                            </div>
+                            <button class="btn-descargar">Descargar</button>
+                        </div>
+                        <div class="documento-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <div class="documento-info">
+                                <h5>Acta Consejo Gestor Octubre</h5>
+                                <span>5 Oct 2024 · PDF 1.8MB</span>
+                            </div>
+                            <button class="btn-descargar">Descargar</button>
+                        </div>
+                        <div class="documento-item">
+                            <i class="fas fa-file-pdf"></i>
+                            <div class="documento-info">
+                                <h5>Memoria Anual 2023</h5>
+                                <span>20 Ene 2024 · PDF 3.2MB</span>
+                            </div>
+                            <button class="btn-descargar">Descargar</button>
+                        </div>
+                        <div class="documento-item">
+                            <i class="fas fa-file-excel"></i>
+                            <div class="documento-info">
+                                <h5>Datos Recaudación 2024</h5>
+                                <span>Actualizado mensualmente · XLSX 1.1MB</span>
+                            </div>
+                            <button class="btn-descargar">Descargar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sección Participación -->
+    <section id="participa" class="section">
+        <div class="container">
+            <h2>Participa en CVG</h2>
+            
+            <div class="participacion-grid">
+                <div class="propuesta-form">
+                    <h4>Nueva Propuesta</h4>
+                    <form id="form-propuesta">
+                        <div class="form-group">
+                            <label for="titulo">Título de la propuesta</label>
+                            <input type="text" id="titulo" placeholder="Ej: Mejora de aceras en el centro" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="descripcion">Descripción detallada</label>
+                            <textarea id="descripcion" rows="4" placeholder="Describe tu propuesta, qué problema soluciona y qué beneficios aporta..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="ubicacion">Ubicación sugerida</label>
+                            <input type="text" id="ubicacion" placeholder="Ej: Calle Gran Vía, Centro Histórico..." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="categoria">Categoría</label>
+                            <select id="categoria" required>
+                                <option value="">Selecciona categoría</option>
+                                <option value="infraestructura">Infraestructura</option>
+                                <option value="medioambiente">Medio Ambiente</option>
+                                <option value="cultura">Cultura</option>
+                                <option value="movilidad">Movilidad</option>
+                                <option value="seguridad">Seguridad</option>
+                                <option value="otros">Otros</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-enviar">
+                            <i class="fas fa-paper-plane"></i> Enviar Propuesta al Consejo
+                        </button>
+                    </form>
+                </div>
+
+                <div class="propuestas-lista">
+                    <h4>Propuestas Ciudadanas Populares</h4>
+                    <div class="lista-propuestas">
+                        <div class="propuesta-item">
+                            <h5>Mejora de aceras en Centro Histórico</h5>
+                            <p>Renovación de las aceras en el casco histórico mejorando la accesibilidad para personas con movilidad reducida y peatones.</p>
+                            <div class="propuesta-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> Centro Histórico</span>
+                                <span><i class="fas fa-tag"></i> Infraestructura</span>
+                                <span><i class="fas fa-calendar"></i> 15/10/2024</span>
+                                <span class="estado-evaluacion">En evaluación</span>
+                            </div>
+                            <div class="propuesta-votos">
+                                <button class="btn-votar">
+                                    <i class="fas fa-thumbs-up"></i> Apoyar Propuesta
+                                </button>
+                                <span>342 apoyos</span>
+                            </div>
+                        </div>
+
+                        <div class="propuesta-item">
+                            <h5>Instalación de fuentes públicas</h5>
+                            <p>Colocación de fuentes de agua potable en zonas turísticas para reducir el consumo de plásticos y mejorar la experiencia del visitante.</p>
+                            <div class="propuesta-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> Zonas turísticas</span>
+                                <span><i class="fas fa-tag"></i> Medio Ambiente</span>
+                                <span><i class="fas fa-calendar"></i> 12/10/2024</span>
+                                <span class="estado-evaluacion">En evaluación</span>
+                            </div>
+                            <div class="propuesta-votos">
+                                <button class="btn-votar">
+                                    <i class="fas fa-thumbs-up"></i> Apoyar Propuesta
+                                </button>
+                                <span>287 apoyos</span>
+                            </div>
+                        </div>
+
+                        <div class="propuesta-item">
+                            <h5>Creación de carril bici Alhambra-Centro</h5>
+                            <p>Establecimiento de carril bici seguro que conecte la Alhambra con el centro de la ciudad, promoviendo movilidad sostenible.</p>
+                            <div class="propuesta-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> Alhambra - Centro</span>
+                                <span><i class="fas fa-tag"></i> Movilidad</span>
+                                <span><i class="fas fa-calendar"></i> 08/10/2024</span>
+                                <span class="estado-aprobado">Aprobada</span>
+                            </div>
+                            <div class="propuesta-votos">
+                                <button class="btn-votar">
+                                    <i class="fas fa-thumbs-up"></i> Apoyar Propuesta
+                                </button>
+                                <span>521 apoyos</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pie de página -->
+    <footer>
+        <div class="container">
+            <div>
+                <h3>CVG - Convive Granada</h3>
+                <p>Sistema transparente de gestión de tasas turísticas para el desarrollo sostenible de Granada.</p>
+            </div>
+            <div>
+                <h4>Contacto</h4>
+                <p>📧 info@convivegranada.es</p>
+                <p>📞 958 123 456</p>
+                <p>📍 Plaza del Carmen, 1, Granada</p>
+            </div>
+            <div>
+                <h4>Enlaces Rápidos</h4>
+                <p><a href="#dashboard">Dashboard</a></p>
+                <p><a href="#proyectos">Proyectos</a></p>
+                <p><a href="#participa">Participa</a></p>
+            </div>
+            <div class="copyright">
+                <p>© 2024 CVG Convive Granada. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Navegación entre secciones
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.section');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Remover active de todos
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    sections.forEach(s => s.classList.remove('active'));
+                    
+                    // Agregar active al clickeado
+                    this.classList.add('active');
+                    const targetSection = document.querySelector(this.getAttribute('href'));
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                        
+                        // Si es la sección del mapa, inicializarlo
+                        if (targetSection.id === 'mapa') {
+                            setTimeout(inicializarMapa, 100);
+                        }
+                    }
+                });
+            });
+
+            // Filtros de proyectos
+            const filtroBtns = document.querySelectorAll('.filtro-btn');
+            const proyectoCards = document.querySelectorAll('.proyecto-card');
+
+            filtroBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const filtro = this.getAttribute('data-filtro');
+                    
+                    // Actualizar botones activos
+                    filtroBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Filtrar proyectos
+                    proyectoCards.forEach(card => {
+                        if (filtro === 'todos') {
+                            card.style.display = 'block';
+                        } else {
+                            if (card.classList.contains(filtro)) {
+                                card.style.display = 'block';
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+            });
+
+            // Manejo del formulario de propuestas
+            const formPropuesta = document.getElementById('form-propuesta');
+            if (formPropuesta) {
+                formPropuesta.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    const formData = {
+                        titulo: document.getElementById('titulo').value,
+                        descripcion: document.getElementById('descripcion').value,
+                        ubicacion: document.getElementById('ubicacion').value,
+                        categoria: document.getElementById('categoria').value
+                    };
+
+                    alert('¡Propuesta enviada con éxito! Será evaluada por el Consejo Gestor de CVG.');
+                    this.reset();
+                });
+            }
+
+            // Botones de votar
+            const votarBtns = document.querySelectorAll('.btn-votar');
+            votarBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const spanVotos = this.parentElement.querySelector('span');
+                    let votos = parseInt(spanVotos.textContent) || 0;
+                    votos++;
+                    spanVotos.textContent = votos + ' apoyos';
+                    alert('¡Gracias por tu apoyo! Tu voto ha sido registrado.');
+                });
+            });
+
+            // Botones de descargar
+            const descargarBtns = document.querySelectorAll('.btn-descargar');
+            descargarBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    alert('En una implementación real, este botón descargaría el documento correspondiente.');
+                });
+            });
+
+            // Inicializar mapa si estamos en la sección del mapa
+            if (document.querySelector('#mapa').classList.contains('active')) {
+                setTimeout(inicializarMapa, 100);
+            }
+        });
+
+        // Mapa interactivo de Granada
+        function inicializarMapa() {
+            // Coordenadas de Granada
+            const granada = [37.1773, -3.5986];
+            
+            // Crear mapa
+            const mapa = L.map('mapa-interactivo').setView(granada, 14);
+
+            // Añadir capa base de OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 18
+            }).addTo(mapa);
+
+            // Iconos personalizados
+            const crearIcono = (html, className) => {
+                return L.divIcon({
+                    className: `map-marker ${className}`,
+                    html: html,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30]
+                });
+            };
+
+            const iconoCompletado = crearIcono('✅', 'completado');
+            const iconoEjecucion = crearIcono('🟡', 'ejecucion');
+            const iconoAprobado = crearIcono('🔵', 'aprobado');
+
+            // Proyectos en el mapa
+            const proyectos = [
+                {
+                    nombre: "Rehabilitación Albaicín",
+                    tipo: "completado",
+                    coordenadas: [37.1805, -3.5902],
+                    descripcion: "Rehabilitación integral de fachadas y espacios públicos en el barrio del Albaicín",
+                    presupuesto: "€450,000",
+                    periodo: "Ene 2024 - Jun 2024"
+                },
+                {
+                    nombre: "Mejora Iluminación Alhambra", 
+                    tipo: "ejecucion",
+                    coordenadas: [37.1765, -3.5885],
+                    descripcion: "Instalación de sistema de iluminación LED eficiente en accesos a la Alhambra",
+                    presupuesto: "€320,000",
+                    periodo: "Mar 2024 - Nov 2024"
+                },
+                {
+                    nombre: "Nuevo Mirador San Nicolás",
+                    tipo: "aprobado", 
+                    coordenadas: [37.1825, -3.5922],
+                    descripcion: "Ampliación y mejora del mirador con mejor accesibilidad y servicios",
+                    presupuesto: "€150,000",
+                    periodo: "Nov 2024 - Feb 2025"
+                },
+                {
+                    nombre: "Modernización Mercado San Agustín",
+                    tipo: "ejecucion",
+                    coordenadas: [37.1752, -3.6005],
+                    descripcion: "Renovación completa de las instalaciones del mercado municipal",
+                    presupuesto: "€280,000",
+                    periodo: "Abr 2024 - Dic 2024"
+                }
+            ];
+
+            // Añadir marcadores al mapa
+            proyectos.forEach(proyecto => {
+                let icono;
+                switch(proyecto.tipo) {
+                    case 'completado':
+                        icono = iconoCompletado;
+                        break;
+                    case 'ejecucion':
+                        icono = iconoEjecucion;
+                        break;
+                    case 'aprobado':
+                        icono = iconoAprobado;
+                        break;
+                }
+
+                const marcador = L.marker(proyecto.coordenadas, { icon: icono }).addTo(mapa);
+                
+                const popupContent = `
+                    <div style="min-width: 250px; padding: 10px;">
+                        <h3 style="margin: 0 0 10px 0; color: #2c5530; font-size: 1.2em;">${proyecto.nombre}</h3>
+                        <p style="margin: 5px 0; color: #666;">${proyecto.descripcion}</p>
+                        <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                            <p style="margin: 5px 0;"><strong>Presupuesto:</strong> ${proyecto.presupuesto}</p>
+                            <p style="margin: 5px 0;"><strong>Periodo:</strong> ${proyecto.periodo}</p>
+                            <p style="margin: 5px 0;"><strong>Estado:</strong> 
+                                <span style="color: ${
+                                    proyecto.tipo === 'completado' ? '#28a745' : 
+                                    proyecto.tipo === 'ejecucion' ? '#ffc107' : '#17a2b8'
+                                };">${proyecto.tipo.charAt(0).toUpperCase() + proyecto.tipo.slice(1)}</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+
+                marcador.bindPopup(popupContent);
+            });
+
+            // Añadir control de escala
+            L.control.scale({ imperial: false }).addTo(mapa);
+        }
+
+        // Simular datos en tiempo real
+        function actualizarDatosTiempoReal() {
+            const saldoElement = document.querySelector('.saldo-actual .monto');
+            
+            if (saldoElement) {
+                const saldoActual = 2847320;
+                const variacion = Math.floor(Math.random() * 5000) - 2500;
+                const nuevoSaldo = saldoActual + variacion;
+                saldoElement.textContent = '€' + nuevoSaldo.toLocaleString();
+            }
+        }
+
+        // Actualizar cada 30 segundos
+        setInterval(actualizarDatosTiempoReal, 30000);
+    </script>
+</body>
+</html>
